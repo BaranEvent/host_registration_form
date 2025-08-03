@@ -19,6 +19,8 @@ if 'question_counter' not in st.session_state:
     st.session_state.question_counter = 0
 if 'show_preview' not in st.session_state:
     st.session_state.show_preview = False
+if 'event_id' not in st.session_state:
+    st.session_state.event_id = None
 
 # Airtable configuration
 AIRTABLE_CONFIG = {
@@ -105,8 +107,8 @@ def save_form():
         st.error("Lütfen en az bir soru ekleyin!")
         return
     
-    # Generate unique event_id
-    event_id = str(uuid.uuid4())
+    # Use event_id from session state or default to "0"
+    event_id = st.session_state.event_id or "0"
     
     try:
         table = get_airtable_table()
@@ -167,6 +169,12 @@ def render_question_preview(question):
 def main():
     st.title("📝 Form Builder Dashboard")
     st.markdown("Kayıt formu oluşturmak için aşağıdaki araçları kullanın.")
+    
+    # Get event_id from query parameters
+    query_params = st.experimental_get_query_params()
+    if 'event_id' in query_params:
+        st.session_state.event_id = query_params['event_id'][0]
+        st.info(f"Event ID: {st.session_state.event_id}")
     
     # Main content area
     st.header("Form Oluşturucu")
