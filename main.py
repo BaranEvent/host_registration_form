@@ -49,6 +49,11 @@ def get_airtable_table(table_name="registration_form"):
     api = get_airtable_api()
     return api.table(AIRTABLE_CONFIG["base_id"], table_name)
 
+def get_event_features_table():
+    """Get event_features table instance"""
+    api = get_airtable_api()
+    return api.table(AIRTABLE_CONFIG["base_id"], "event_features")
+
 def add_question():
     """Add a new question to the form"""
     question_id = f"question_{st.session_state.question_counter}"
@@ -131,6 +136,36 @@ def save_form():
             table.create(record_data)
         
         st.success(f"Form başarıyla kaydedildi! Event ID: {event_id}")
+        
+        # Update event_features table
+        try:
+            event_features_table = get_event_features_table()
+            
+            # Convert event_id to integer for comparison
+            event_id_int = int(event_id) if event_id.isdigit() else 0
+            st.info(f"Looking for event_id: {event_id_int}, feature_id: 1")
+            
+            # Look for existing record with same event_id and feature_id = 1
+            records = event_features_table.all(formula=f"AND({{event_id}} = {event_id_int}, {{feature_id}} = 1)")
+            st.info(f"Found {len(records)} existing records")
+            
+            if records:
+                # Update existing record
+                record_id = records[0]['id']
+                event_features_table.update(record_id, {"is_active": True})
+                st.info("Event features table updated successfully!")
+            else:
+                # Create new record
+                event_features_table.create({
+                    "event_id": event_id_int,
+                    "feature_id": 1,
+                    "is_active": True
+                })
+                st.info("New event features record created successfully!")
+                
+        except Exception as e:
+            st.warning(f"Event features table update failed: {str(e)}")
+            st.error(f"Error details: {str(e)}")
         
         # Clear the form
         st.session_state.questions = []
